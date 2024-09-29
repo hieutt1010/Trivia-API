@@ -5,21 +5,22 @@ from flask_sqlalchemy import SQLAlchemy
 
 from flaskr import create_app
 from models import setup_db, Question, Category
+from dotenv  import load_dotenv
 
 class TriviaTestCase(unittest.TestCase):
     """This class represents the trivia test case"""
 
+
+    load_dotenv()
+    database_path = os.getenv('database_path_test')
+    
     def setUp(self):
         """Define test variables and initialize app."""
-        self.database_name = "trivia_test"
-        self.database_path = "postgresql://{}@{}/{}".format('student', 'localhost:5432', self.database_name)
-        
         self.app = create_app({
             "SQLALCHEMY_DATABASE_URI": self.database_path
         })
         
         self.client = self.app.test_client
-
     
     def tearDown(self):
         """Executed after reach test"""
@@ -90,20 +91,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data["message"], "resource not found")
     #endregion
     
-    #region @app.route('/questions/<int:question_id>', methods=['DELETE'])
-    def test_delete_questions_success(self):
-        res = self.client().delete("/questions/67")
-        data = json.loads(res.data)
 
-        self.assertEqual(res.status_code, 200)
-        self.assertTrue(data["success"])
-        
-    def test_delete_questions_failed(self):
-        res = self.client().delete("/questions/1000")
-        # data = json.loads(res.data)
-
-        self.assertEqual(res.status_code, 404)
-    #endregion
     
     # #region @app.route('/questions', methods=['POST']) #! 4 case for both "search" and "create" Question
     def test_seach_question_success(self):
@@ -215,7 +203,24 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data['success'], False)
         self.assertEqual(data['message'], 'unprocessable')
     #endregion
-    
+    #region @app.route('/questions/<int:question_id>', methods=['DELETE'])
+    def test_delete_questions_success(self):
+        question = Question(question="question", answer="answer", category="1", difficulty=1)
+        question.insert()
+        question_id = question.id
+
+        res = self.client().delete(f"/questions/{question_id}")
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(data["success"])
+        
+    def test_delete_questions_failed(self):
+        res = self.client().delete("/questions/1000")
+        # data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 404)
+    #endregion
 # Make the tests conveniently executable
 if __name__ == "__main__":
     unittest.main()
