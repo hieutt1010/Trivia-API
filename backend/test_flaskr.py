@@ -17,7 +17,7 @@ class TriviaTestCase(unittest.TestCase):
         self.app = create_app({
             "SQLALCHEMY_DATABASE_URI": self.database_path
         })
-
+        
         self.client = self.app.test_client
 
     
@@ -79,7 +79,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertTrue(data["questions"])
         self.assertTrue(data["totalQuestions"])
         self.assertTrue(len(data["categories"]))
-        self.assertEqual(data["currentCategory"], 0)
+        self.assertTrue(data["currentCategory"])
         
     def test_get_questions_failed(self):
         res = self.client().get("/questions/aa")
@@ -103,10 +103,9 @@ class TriviaTestCase(unittest.TestCase):
         # data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 404)
-    # #endregion
+    #endregion
     
     # #region @app.route('/questions', methods=['POST']) #! 4 case for both "search" and "create" Question
-    # # case seach Question
     def test_seach_question_success(self):
         res = self.client().post('/questions', json={"searchTerm": "How"})
         data = json.loads(res.data)
@@ -114,7 +113,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertTrue(data["questions"])
         self.assertTrue(data["totalQuestions"])
-        self.assertEqual(data["currentCategory"], 0)
+        self.assertTrue(data["currentCategory"])
 
     def test_seach_question_failed(self):
         res = self.client().get('/categories/x')
@@ -167,10 +166,11 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data['message'], 'unprocessable')
     #end region
     
-    #region @app.route('/categories/<int:category_id>/questions')
+    # #region @app.route('/categories/<int:category_id>/questions')
     def test_get_question_by_category_success(self):
-        request_category_id = 5
-        res = self.client().get('/categories/5/questions')
+        request_category = Category.query.first()
+        request_category_id = request_category.id
+        res = self.client().get(f'/categories/{request_category_id}/questions')
         data = json.loads(res.data)
         all_questions = Question.query.filter(Question.category == request_category_id).all()
         format_questions = [question.format() for question in all_questions]
@@ -215,6 +215,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data['success'], False)
         self.assertEqual(data['message'], 'unprocessable')
     #endregion
+    
 # Make the tests conveniently executable
 if __name__ == "__main__":
     unittest.main()

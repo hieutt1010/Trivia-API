@@ -215,7 +215,7 @@ def create_app(test_config=None):
             question_query = Question.query
             
             if quiz_category is not None:
-                category = Category.query.filter(Category.type == quiz_category).one_or_none()
+                category = Category.query.filter(Category.type == quiz_category["type"]).one_or_none()
                 if category is not None:
                     question_query = question_query.filter(Question.category == category.id)
             
