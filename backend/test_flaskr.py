@@ -4,7 +4,7 @@ import json
 from flask_sqlalchemy import SQLAlchemy
 
 from flaskr import create_app
-from models import setup_db, Question, Category
+from models import setup_db, Question, Category, db as database
 from dotenv  import load_dotenv
 
 class TriviaTestCase(unittest.TestCase):
@@ -21,10 +21,16 @@ class TriviaTestCase(unittest.TestCase):
         })
         
         self.client = self.app.test_client
-    
+        self.connection = database.engine.connect()
+        self.trans = self.connection.begin()
+
+        # Bind a session to the connection
+        database.session.bind = self.connection
     def tearDown(self):
         """Executed after reach test"""
-        pass
+        self.trans.rollback()
+        self.connection.close()
+        database.session.remove()
 
     """
     TODO
@@ -33,14 +39,13 @@ class TriviaTestCase(unittest.TestCase):
     #region app.route('/categories', methods=['GET'])
     def test_retrieve_categories_success(self):
         res = self.client().get('/categories')
-        data = json.loads(res.data)
-    
+        data = res.get_json()
         self.assertEqual(res.status_code, 200)
         self.assertTrue(data["categories"])
         
     def test_retrieve_categories_failed(self):
         res = self.client().get('/categories/x')
-        data = json.loads(res.data)
+        data = res.get_json()
     
         self.assertEqual(res.status_code, 404)
         self.assertEqual(data['success'], False)
@@ -74,7 +79,7 @@ class TriviaTestCase(unittest.TestCase):
     #region @app.route('/questions', methods=['GET'])
     def test_get_questions_success(self):
         res = self.client().get("/questions")
-        data = json.loads(res.data)
+        data = res.get_json()
 
         self.assertEqual(res.status_code, 200)
         self.assertTrue(data["questions"])
@@ -84,7 +89,7 @@ class TriviaTestCase(unittest.TestCase):
         
     def test_get_questions_failed(self):
         res = self.client().get("/questions/aa")
-        data = json.loads(res.data)
+        data = res.get_json()
 
         self.assertEqual(res.status_code, 404)
         self.assertEqual(data["success"], False)
@@ -94,22 +99,23 @@ class TriviaTestCase(unittest.TestCase):
 
     
     # #region @app.route('/questions', methods=['POST']) #! 4 case for both "search" and "create" Question
-    def test_seach_question_success(self):
+    def test_search_question_success(self):
         res = self.client().post('/questions', json={"searchTerm": "How"})
-        data = json.loads(res.data)
+        data = res.get_json()
         
         self.assertEqual(res.status_code, 200)
         self.assertTrue(data["questions"])
         self.assertTrue(data["totalQuestions"])
         self.assertTrue(data["currentCategory"])
 
-    def test_seach_question_failed(self):
-        res = self.client().get('/categories/x')
-        data = json.loads(res.data)
+    def test_search_question_failed(self):
+        res = self.client().post('/questions', json={"searchTerm": "xyz123"})
+        data = res.get_json()
     
-        self.assertEqual(res.status_code, 404)
-        self.assertEqual(data['success'], False)
-        self.assertEqual(data['message'], 'resource not found')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(data["questions"], [])
+        self.assertEqual(data["totalQuestions"], 0)
+        self.assertTrue(data["currentCategory"])
     
     #case create Question
     def test_create_question_success(self):
@@ -127,7 +133,7 @@ class TriviaTestCase(unittest.TestCase):
             "currentCategory": "Entertainment"
         }
         res = self.client().post('/questions', json= json_data)
-        data = json.loads(res.data)
+        data = res.get_json()
         
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["success"], True)
@@ -147,7 +153,7 @@ class TriviaTestCase(unittest.TestCase):
             "currentCategory": "Entertainment"
         }
         res = self.client().post('/questions', json = json_data)
-        data = json.loads(res.data)
+        data = res.get_json()
     
         self.assertEqual(res.status_code, 422)
         self.assertEqual(data['success'], False)
@@ -159,7 +165,7 @@ class TriviaTestCase(unittest.TestCase):
         request_category = Category.query.first()
         request_category_id = request_category.id
         res = self.client().get(f'/categories/{request_category_id}/questions')
-        data = json.loads(res.data)
+        data = res.get_json()
         all_questions = Question.query.filter(Question.category == request_category_id).all()
         format_questions = [question.format() for question in all_questions]
         currentCategory = Category.query.filter(Category.id == request_category_id).one_or_none()
@@ -203,6 +209,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data['success'], False)
         self.assertEqual(data['message'], 'unprocessable')
     #endregion
+    
     #region @app.route('/questions/<int:question_id>', methods=['DELETE'])
     def test_delete_questions_success(self):
         question = Question(question="question", answer="answer", category="1", difficulty=1)
@@ -210,14 +217,13 @@ class TriviaTestCase(unittest.TestCase):
         question_id = question.id
 
         res = self.client().delete(f"/questions/{question_id}")
-        data = json.loads(res.data)
+        data = res.get_json()
 
         self.assertEqual(res.status_code, 200)
         self.assertTrue(data["success"])
         
     def test_delete_questions_failed(self):
         res = self.client().delete("/questions/1000")
-        # data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 404)
     #endregion
