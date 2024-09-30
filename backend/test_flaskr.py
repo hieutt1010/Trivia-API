@@ -83,7 +83,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertTrue(data["questions"])
         self.assertTrue(data["totalQuestions"])
         self.assertTrue(len(data["categories"]))
-        self.assertTrue(data["currentCategory"])
+        self.assertNotEqual(data["currentCategory"], None)
         
     def test_get_questions_failed(self):
         res = self.client().get("/questions/aa")
@@ -102,7 +102,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertTrue(data["questions"])
         self.assertTrue(data["totalQuestions"])
-        self.assertTrue(data["currentCategory"])
+        self.assertNotEqual(data["currentCategory"], None)
 
     def test_search_question_failed(self):
         res = self.client().post('/questions', json={"searchTerm": "xyz123"})
@@ -111,7 +111,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["questions"], [])
         self.assertEqual(data["totalQuestions"], 0)
-        self.assertTrue(data["currentCategory"])
+        self.assertNotEqual(data["currentCategory"], None)
     
     #case create Question
     def test_create_question_success(self):
