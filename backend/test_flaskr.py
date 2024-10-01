@@ -19,12 +19,12 @@ class TriviaTestCase(unittest.TestCase):
             "SQLALCHEMY_DATABASE_URI": self.database_path
         })
         
-        self.client = self.app.test_client
-        self.connection = database.engine.connect()
-        self.trans = self.connection.begin()
         with self.app.app_context():
+            self.client = self.app.test_client
+            self.connection = database.engine.connect()
+            self.trans = self.connection.begin()
             database.session.bind = self.connection
-        
+            
     def tearDown(self):
         """Executed after reach test"""
         with self.app.app_context():
@@ -42,16 +42,16 @@ class TriviaTestCase(unittest.TestCase):
         data = res.get_json()
         self.assertEqual(res.status_code, 200)
         self.assertTrue(data["categories"])
-        
+
     def test_retrieve_categories_failed(self):
         res = self.client().get('/categories/x')
         data = res.get_json()
-    
+
         self.assertEqual(res.status_code, 404)
         self.assertEqual(data['success'], False)
         self.assertEqual(data['message'], 'resource not found')
     #endregion
-    
+
     #region @app.route('/questions/<int:question_id>', methods=['DELETE'])
     def test_delete_question_success(self):
         question = Question(question="question", answer="answer", category="1", difficulty=1)
@@ -71,7 +71,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], False)
     #endregion
-    
+
     #region @app.route('/questions', methods=['GET'])
     def test_get_questions_success(self):
         res = self.client().get("/questions")
