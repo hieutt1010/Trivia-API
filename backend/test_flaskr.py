@@ -2,7 +2,6 @@ import os
 import unittest
 import json
 from flask_sqlalchemy import SQLAlchemy
-
 from flaskr import create_app
 from models import setup_db, Question, Category, db as database
 from dotenv  import load_dotenv
@@ -10,8 +9,8 @@ from dotenv  import load_dotenv
 class TriviaTestCase(unittest.TestCase):
     """This class represents the trivia test case"""
 
-
     load_dotenv()
+
     database_path = os.getenv('database_path_test')
     
     def setUp(self):
@@ -69,9 +68,8 @@ class TriviaTestCase(unittest.TestCase):
         res = self.client().delete('/questions/200')
         data = res.get_json()
 
-        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], False)
-        self.assertEqual(data['message'], 'resource not found')
     #endregion
     
     #region @app.route('/questions', methods=['GET'])
@@ -217,12 +215,17 @@ class TriviaTestCase(unittest.TestCase):
 
         self.assertEqual(res.status_code, 200)
         self.assertTrue(data["success"])
+        self.assertTrue(data["question_id"], question_id)
         
     def test_delete_questions_failed(self):
         res = self.client().delete("/questions/1000")
+        data = res.get_json()
 
-        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(data["success"])
+        self.assertTrue(data["question_id"], 1000)
     #endregion
+    
 # Make the tests conveniently executable
 if __name__ == "__main__":
     unittest.main()
