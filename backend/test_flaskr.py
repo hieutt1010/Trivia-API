@@ -186,7 +186,7 @@ class TriviaTestCase(unittest.TestCase):
     def test_get_quizzes_success(self):
         request_data = {
             'previous_questions': [1, 4, 20, 15],
-            'quiz_category': 'Science'
+            'quiz_category': {'id': 1,'type' :'Science'}
         }
         res = self.client().post('/quizzes', json=request_data)
         data = res.get_json()
@@ -197,14 +197,13 @@ class TriviaTestCase(unittest.TestCase):
     def test_get_quizzes_failed(self):
         request_data = {
             'previous_questions': [],
-            'quiz_category': 'abc'
+            'quiz_category': {'id': 1000, 'type': 'abc'}
         }
-        res = self.client().post('/quizzes', json='request_data')
+        res = self.client().post('/quizzes', json=request_data)
         data = res.get_json()
         
-        self.assertEqual(res.status_code, 422)
-        self.assertEqual(data['success'], False)
-        self.assertEqual(data['message'], 'unprocessable')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(data['question'], None)
     #endregion
     
     #region @app.route('/questions/<int:question_id>', methods=['DELETE'])
